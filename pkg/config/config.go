@@ -8,7 +8,8 @@ import (
 )
 
 type Config struct {
-	Env string `yaml:"env" env-default:"local"`
+	Env      string        `yaml:"env" env-default:"local"`
+	TTLToken time.Duration `yaml:"ttl_token" env-default:"5m"`
 
 	ServerSetting `yaml:"http_server"`
 }

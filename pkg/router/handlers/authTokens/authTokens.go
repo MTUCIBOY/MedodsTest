@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	errorresponse "github.com/MTUCIBOY/MedodsTest/pkg/router/errorResponse"
 	"github.com/MTUCIBOY/MedodsTest/pkg/storage"
@@ -29,7 +30,7 @@ type userResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-func ATHandler(log *slog.Logger, cu checkUser) http.HandlerFunc {
+func ATHandler(log *slog.Logger, ttl time.Duration, cu checkUser) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fn = "handlers.authTokens"
 		log = log.With(
@@ -69,7 +70,7 @@ func ATHandler(log *slog.Logger, cu checkUser) http.HandlerFunc {
 			return
 		}
 
-		accessToken, err := access.New(req.Email, w.Header().Get("User-Agent"))
+		accessToken, err := access.New(req.Email, w.Header().Get("User-Agent"), ttl)
 		if err != nil {
 			log.Error("failed to make access token", slog.String("err", err.Error()))
 			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
