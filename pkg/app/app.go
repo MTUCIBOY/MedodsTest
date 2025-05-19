@@ -26,7 +26,7 @@ func New(cfg *config.Config, log *slog.Logger, db storage.DB) *App {
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
 
-		Handler: router.New(),
+		Handler: router.New(cfg, log, db),
 	}
 
 	return &App{
@@ -47,7 +47,7 @@ func (a *App) Run() {
 	err := a.db.Connect(context.TODO(), os.Getenv("STORAGE_DSN"))
 	if err != nil {
 		log.Error(
-			"failede to connet to db",
+			"failed to connet to db",
 			slog.String("err", err.Error()),
 		)
 
@@ -81,7 +81,7 @@ func (a *App) Stop() {
 		)
 	}
 
-	a.db.Close(context.TODO())
+	a.db.Close()
 }
 
 func gracefulShutdown(app *App) {

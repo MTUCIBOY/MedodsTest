@@ -2,14 +2,19 @@ package psql
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
+	"github.com/MTUCIBOY/MedodsTest/pkg/storage"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Storage struct {
-	db     *pgx.Conn
+	db     *pgxpool.Pool
 	logger *slog.Logger
 }
 
@@ -23,34 +28,78 @@ func (s *Storage) Connect(ctx context.Context, dsn string) error {
 	const fn = "psql.Storage.Connect"
 	log := s.logger.With(slog.String("fn", fn))
 
-	conConfig, err := pgx.ParseConfig(dsn)
-	if err != nil {
-		log.Error("failed to parse config", slog.String("err", err.Error()))
-
-		return fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	conn, err := pgx.ConnectConfig(ctx, conConfig)
+	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		log.Error("failed to connect to DB", slog.String("err", err.Error()))
 
 		return fmt.Errorf("failed to connect to DB: %w", err)
 	}
 
-	s.db = conn
+	s.db = pool
 
 	log.Info("Connected to database")
 
 	return nil
 }
 
-func (s *Storage) Close(ctx context.Context) {
-	const fn = "psql.Storage.Close"
+func (s *Storage) Close() {
+	s.db.Close()
+	s.logger.Info("Connection to database is closed")
+}
+
+func (s *Storage) Auth(ctx context.Context, email, password string) (bool, error) {
+	const fn = "psql.Storage.Auth"
 	log := s.logger.With(slog.String("fn", fn))
 
-	if err := s.db.Close(ctx); err != nil {
-		log.Error("failed to close DB", slog.String("err", err.Error()))
+	var passHash []byte
+
+	err := s.db.QueryRow(ctx, storage.AuthQuery, email).Scan(&passHash)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			log.Error(storage.ErrEmailNotFound.Error())
+
+			return false, fmt.Errorf("query failed: %w", storage.ErrEmailNotFound)
+		}
+
+		log.Error("query failed", slog.String("err", err.Error()))
+
+		return false, fmt.Errorf("query failed: %w", err)
 	}
 
-	log.Info("Connection to database is closed")
+	err = bcrypt.CompareHashAndPassword(passHash, []byte(password))
+	if err != nil {
+		log.Error("failed compare hash", slog.String("err", err.Error()))
+
+		return false, fmt.Errorf("failed compare hash: %w", storage.ErrWrongPassword)
+	}
+
+	return true, nil
+}
+
+func (s *Storage) AddUser(ctx context.Context, email, password string) error {
+	const fn = "psql.Storage.AddUser"
+	log := s.logger.With(slog.String("fn", fn))
+
+	passHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Error("failed to generate password hash", slog.String("err", err.Error()))
+
+		return fmt.Errorf("failed to generate password hash: %w", err)
+	}
+
+	_, err = s.db.Exec(ctx, storage.NewUserQuery, email, passHash)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			log.Error("not unique email", slog.String("err", err.Error()))
+
+			return fmt.Errorf("not unique email: %w", storage.ErrEmailExist)
+		}
+
+		log.Error("query failed", slog.String("err", err.Error()))
+
+		return fmt.Errorf("query failed: %w", err)
+	}
+
+	return nil
 }
