@@ -10,6 +10,7 @@ type DB interface {
 	Auth(ctx context.Context, email, password string) (bool, error)
 	AddUser(ctx context.Context, email, password string) error
 	AddRefreshToken(ctx context.Context, email, token string) error
+	UserUUID(ctx context.Context, email string) (string, error)
 	Close()
 }
 
@@ -31,6 +32,7 @@ const (
 		VALUES ($1, $2);
 	`
 
+	//nolint:gosec
 	AddRefreshTokenQuery = `
 		INSERT INTO refresh_hashes (user_uuid, token_hash)
 		VALUES ($1, $2);

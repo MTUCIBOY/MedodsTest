@@ -38,27 +38,27 @@ func New(email, userAgent string, ttl time.Duration) (string, error) {
 	return tokenString, nil
 }
 
-func CheckToken(token string) (string, error) {
+func CheckToken(token string) (string, string, error) {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		return "", tokens.ErrEmptySecretKey
+		return "", "", tokens.ErrEmptySecretKey
 	}
 
 	parsedToken, err := jwt.ParseWithClaims(token, &Claims{}, func(_ *jwt.Token) (any, error) {
 		return []byte(jwtSecret), nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS512.Alg()}))
 	if err != nil {
-		return "", fmt.Errorf("failed to parse token: %w", err)
+		return "", "", fmt.Errorf("failed to parse token: %w", err)
 	}
 
 	if !parsedToken.Valid {
-		return "", tokens.ErrInvalidToken
+		return "", "", tokens.ErrInvalidToken
 	}
 
 	claims, ok := parsedToken.Claims.(*Claims)
 	if !ok {
-		return "", tokens.ErrInvalidClaims
+		return "", "", tokens.ErrInvalidClaims
 	}
 
-	return claims.UserAgent, nil
+	return claims.Subject, claims.UserAgent, nil
 }

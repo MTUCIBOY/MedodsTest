@@ -1,11 +1,13 @@
 package tokenvalidator
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
 
 	errorresponse "github.com/MTUCIBOY/MedodsTest/pkg/router/errorResponse"
+	"github.com/MTUCIBOY/MedodsTest/pkg/router/middlewares"
 	"github.com/MTUCIBOY/MedodsTest/pkg/tokens"
 	"github.com/MTUCIBOY/MedodsTest/pkg/tokens/access"
 	"github.com/MTUCIBOY/MedodsTest/pkg/tokens/refresh"
@@ -32,7 +34,7 @@ func TVMiddleware(log *slog.Logger) func(next http.Handler) http.Handler {
 				return
 			}
 
-			_, err := access.CheckToken(accessToken)
+			userEmail, _, err := access.CheckToken(accessToken)
 			if err != nil {
 				log.Error("failed to check access token", slog.String("err", err.Error()))
 
@@ -60,7 +62,8 @@ func TVMiddleware(log *slog.Logger) func(next http.Handler) http.Handler {
 				return
 			}
 
-			next.ServeHTTP(w, r)
+			ctx := context.WithValue(r.Context(), middlewares.UserEmailKey, userEmail)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }

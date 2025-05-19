@@ -5,6 +5,7 @@ import (
 
 	"github.com/MTUCIBOY/MedodsTest/pkg/config"
 	authtokens "github.com/MTUCIBOY/MedodsTest/pkg/router/handlers/authTokens"
+	getguid "github.com/MTUCIBOY/MedodsTest/pkg/router/handlers/getGUID"
 	newuser "github.com/MTUCIBOY/MedodsTest/pkg/router/handlers/newUser"
 	tokenvalidator "github.com/MTUCIBOY/MedodsTest/pkg/router/middlewares/tokenValidator"
 	"github.com/MTUCIBOY/MedodsTest/pkg/storage"
@@ -22,9 +23,9 @@ func New(cfg *config.Config, log *slog.Logger, db storage.DB) *chi.Mux {
 	)
 
 	router.Group(func(r chi.Router) {
-		r.Use(
-			tokenvalidator.TVMiddleware(log),
-		)
+		r.Use(tokenvalidator.TVMiddleware(log))
+
+		r.Get("/GUID", getguid.UUIDHadler(log, db))
 	})
 
 	router.Post("/authTokens", authtokens.ATHandler(log, cfg.TTLToken, db))
