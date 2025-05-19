@@ -9,6 +9,7 @@ type DB interface {
 	Connect(ctx context.Context, dsn string) error
 	Auth(ctx context.Context, email, password string) (bool, error)
 	AddUser(ctx context.Context, email, password string) error
+	AddRefreshToken(ctx context.Context, email, token string) error
 	Close()
 }
 
@@ -22,11 +23,22 @@ const (
 	AuthQuery = `
 		SELECT password_hash 
 		FROM users 
-		WHERE email = $1
+		WHERE email = $1;
 	`
 
 	NewUserQuery = `
 		INSERT INTO users (email, password_hash)
 		VALUES ($1, $2);
+	`
+
+	AddRefreshTokenQuery = `
+		INSERT INTO refresh_hashes (user_uuid, token_hash)
+		VALUES ($1, $2);
+	`
+
+	UserUUIDQuery = `
+		SELECT uuid
+		FROM users
+		WHERE email = $1;
 	`
 )

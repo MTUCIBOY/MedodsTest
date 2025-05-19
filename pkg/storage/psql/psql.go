@@ -103,3 +103,50 @@ func (s *Storage) AddUser(ctx context.Context, email, password string) error {
 
 	return nil
 }
+
+func (s *Storage) AddRefreshToken(ctx context.Context, email, token string) error {
+	const fn = "psql.Storage.AddRefreshToken"
+	log := s.logger.With(slog.String("fn", fn))
+
+	userUUID, err := s.UserUUID(ctx, email)
+	if err != nil {
+		log.Error("query failed", slog.String("err", err.Error()))
+
+		return fmt.Errorf("query failed: %w", err)
+	}
+
+	// Ограничение  длины токена. У bcrypt есть ограниечение на строку до 72 байт
+	shortToken := []byte(token)[len(token)-72:]
+
+	tokenHash, err := bcrypt.GenerateFromPassword(shortToken, bcrypt.DefaultCost)
+	if err != nil {
+		log.Error("failed to generate token hash", slog.String("err", err.Error()))
+
+		return fmt.Errorf("failed to generate token hash: %w", err)
+	}
+
+	_, err = s.db.Exec(ctx, storage.AddRefreshTokenQuery, userUUID, tokenHash)
+	if err != nil {
+		log.Error("query failed", slog.String("err", err.Error()))
+
+		return fmt.Errorf("query failed: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Storage) UserUUID(ctx context.Context, email string) (string, error) {
+	const fn = "psql.Storage.UserUUID"
+	log := s.logger.With(slog.String("fn", fn))
+
+	var uuid string
+
+	err := s.db.QueryRow(ctx, storage.UserUUIDQuery, email).Scan(&uuid)
+	if err != nil {
+		log.Error("query failed", slog.String("err", err.Error()))
+
+		return "", fmt.Errorf("query failed: %w", err)
+	}
+
+	return uuid, nil
+}

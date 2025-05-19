@@ -1,4 +1,4 @@
-package errorrespondes
+package errorresponse
 
 import (
 	"encoding/json"

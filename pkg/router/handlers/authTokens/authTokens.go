@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	errorrespondes "github.com/MTUCIBOY/MedodsTest/pkg/router/errorRespondes"
+	errorresponse "github.com/MTUCIBOY/MedodsTest/pkg/router/errorResponse"
 	"github.com/MTUCIBOY/MedodsTest/pkg/storage"
 	"github.com/MTUCIBOY/MedodsTest/pkg/tokens/access"
 	"github.com/MTUCIBOY/MedodsTest/pkg/tokens/refresh"
@@ -16,6 +16,7 @@ import (
 
 type checkUser interface {
 	Auth(ctx context.Context, email, password string) (bool, error)
+	AddRefreshToken(ctx context.Context, email, token string) error
 }
 
 type userRequest struct {
@@ -41,7 +42,7 @@ func ATHandler(log *slog.Logger, cu checkUser) http.HandlerFunc {
 		var req userRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			log.Error("failed to decode request body", slog.String("err", err.Error()))
-			errorrespondes.JSONResponde(w, http.StatusBadRequest, "Invalid request body")
+			errorresponse.JSONResponde(w, http.StatusBadRequest, "Invalid request body")
 
 			return
 		}
@@ -51,19 +52,19 @@ func ATHandler(log *slog.Logger, cu checkUser) http.HandlerFunc {
 			log.Error("error in DB Auth", slog.String("err", err.Error()))
 
 			if errors.Is(err, storage.ErrEmailNotFound) {
-				errorrespondes.JSONResponde(w, http.StatusBadRequest, "Email does not exists")
+				errorresponse.JSONResponde(w, http.StatusBadRequest, "Email does not exists")
 
 				return
 			}
 
-			errorrespondes.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
+			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
 
 			return
 		}
 
 		if !isAuth {
 			log.Error("auth failed")
-			errorrespondes.JSONResponde(w, http.StatusUnauthorized, "Wrong email or password")
+			errorresponse.JSONResponde(w, http.StatusUnauthorized, "Wrong email or password")
 
 			return
 		}
@@ -71,7 +72,7 @@ func ATHandler(log *slog.Logger, cu checkUser) http.HandlerFunc {
 		accessToken, err := access.New(req.Email, w.Header().Get("User-Agent"))
 		if err != nil {
 			log.Error("failed to make access token", slog.String("err", err.Error()))
-			errorrespondes.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
+			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
 
 			return
 		}
@@ -79,7 +80,15 @@ func ATHandler(log *slog.Logger, cu checkUser) http.HandlerFunc {
 		refreshToken, err := refresh.New(accessToken)
 		if err != nil {
 			log.Error("failed to make refresh token", slog.String("err", err.Error()))
-			errorrespondes.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
+			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
+
+			return
+		}
+
+		err = cu.AddRefreshToken(r.Context(), req.Email, refreshToken)
+		if err != nil {
+			log.Error("failed to write in DB refresh token", slog.String("err", err.Error()))
+			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
 
 			return
 		}
@@ -91,12 +100,16 @@ func ATHandler(log *slog.Logger, cu checkUser) http.HandlerFunc {
 
 		if err := json.NewEncoder(w).Encode(&resp); err != nil {
 			log.Error("failed to encode message", slog.String("err", err.Error()))
-			errorrespondes.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
+			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
 
 			return
 		}
 
-		log.Info("User get tokens")
+		log.Info(
+			"User get tokens",
+			slog.String("accessToken", accessToken),
+			slog.String("refreshToken", refreshToken),
+		)
 		w.WriteHeader(http.StatusOK)
 	}
 }

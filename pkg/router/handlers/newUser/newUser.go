@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	errorrespondes "github.com/MTUCIBOY/MedodsTest/pkg/router/errorRespondes"
+	errorresponse "github.com/MTUCIBOY/MedodsTest/pkg/router/errorResponse"
 	"github.com/MTUCIBOY/MedodsTest/pkg/storage"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -32,7 +32,7 @@ func NUHandler(log *slog.Logger, ru registerUser) http.HandlerFunc {
 		var req userRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			log.Error("failed to decode request body", slog.String("err", err.Error()))
-			errorrespondes.JSONResponde(w, http.StatusBadRequest, "Invalid request body")
+			errorresponse.JSONResponde(w, http.StatusBadRequest, "Invalid request body")
 
 			return
 		}
@@ -40,18 +40,18 @@ func NUHandler(log *slog.Logger, ru registerUser) http.HandlerFunc {
 		if err := ru.AddUser(r.Context(), req.Email, req.Password); err != nil {
 			if errors.Is(err, storage.ErrEmailExist) {
 				log.Error(err.Error())
-				errorrespondes.JSONResponde(w, http.StatusBadRequest, "Email alreary exists")
+				errorresponse.JSONResponde(w, http.StatusBadRequest, "Email alreary exists")
 
 				return
 			}
 
 			log.Error("error in AddUser DB", slog.String("err", err.Error()))
-			errorrespondes.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
+			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
 
 			return
 		}
 
-		log.Info("User added in DB")
+		log.Info("User added in DB", slog.String("email", req.Email))
 		w.WriteHeader(http.StatusCreated)
 	}
 }
