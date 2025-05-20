@@ -118,6 +118,7 @@ func ATHandler(log *slog.Logger, ttl time.Duration, cu checkUser) http.HandlerFu
 
 		log.Info(
 			"User get tokens",
+			slog.String("userEmail", req.Email),
 			slog.String("accessToken", accessToken),
 			slog.String("refreshToken", refreshToken),
 		)

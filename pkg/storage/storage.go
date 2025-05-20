@@ -12,6 +12,7 @@ type DB interface {
 	AddRefreshToken(ctx context.Context, email, token, uuidToken string) error
 	UserUUID(ctx context.Context, email string) (string, error)
 	IsActiveRefresh(ctx context.Context, token, uuidToken string) (bool, error)
+	DeactivateRefreshToken(ctx context.Context, uuidToken string) error
 	Close()
 }
 
@@ -50,9 +51,17 @@ const (
 		WHERE email = $1;
 	`
 
+	//nolint:gosec
 	RefreshTokenQuery = `
 		SELECT token_hash, is_active
 		FROM refresh_hashes
+		WHERE uuid = $1;
+	`
+
+	//nolint:gosec
+	DeactivateRefreshTokenQuery = `
+		UPDATE refresh_hashes
+		SET is_active = false
 		WHERE uuid = $1;
 	`
 )

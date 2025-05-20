@@ -152,7 +152,7 @@ func (s *Storage) UserUUID(ctx context.Context, email string) (string, error) {
 }
 
 func (s *Storage) IsActiveRefresh(ctx context.Context, token, uuidToken string) (bool, error) {
-	const fn = "psql.Storage.IsRefresh"
+	const fn = "psql.Storage.IsActiveRefresh"
 	log := s.logger.With(
 		slog.String("fn", fn),
 	)
@@ -169,6 +169,7 @@ func (s *Storage) IsActiveRefresh(ctx context.Context, token, uuidToken string) 
 		return isActive, fmt.Errorf("query failed: %w", err)
 	}
 
+	// Бесполезно?
 	shortToken := []byte(token)[len(token)-storage.MaxLenRefreshHash:]
 
 	err = bcrypt.CompareHashAndPassword(refreshHash, shortToken)
@@ -179,4 +180,20 @@ func (s *Storage) IsActiveRefresh(ctx context.Context, token, uuidToken string) 
 	}
 
 	return isActive, nil
+}
+
+func (s *Storage) DeactivateRefreshToken(ctx context.Context, uuidToken string) error {
+	const fn = "psql.Storage.DeactivateRefreshToken"
+	log := s.logger.With(
+		slog.String("fn", fn),
+	)
+
+	_, err := s.db.Exec(ctx, storage.DeactivateRefreshTokenQuery, uuidToken)
+	if err != nil {
+		log.Error("query failed", slog.String("err", err.Error()))
+
+		return fmt.Errorf("query failed: %w", err)
+	}
+
+	return nil
 }

@@ -1,5 +1,5 @@
 env: "local"
-ttl_token: 1m
+ttl_token: 10m
 
 http_server:
   address: "localhost:8888"

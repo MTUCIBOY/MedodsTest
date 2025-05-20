@@ -5,6 +5,7 @@ import (
 
 	"github.com/MTUCIBOY/MedodsTest/pkg/config"
 	authtokens "github.com/MTUCIBOY/MedodsTest/pkg/router/handlers/authTokens"
+	deauthtokens "github.com/MTUCIBOY/MedodsTest/pkg/router/handlers/deauthTokens"
 	getguid "github.com/MTUCIBOY/MedodsTest/pkg/router/handlers/getGUID"
 	newuser "github.com/MTUCIBOY/MedodsTest/pkg/router/handlers/newUser"
 	updatetokens "github.com/MTUCIBOY/MedodsTest/pkg/router/handlers/updateTokens"
@@ -33,12 +34,15 @@ func New(cfg *config.Config, log *slog.Logger, db storage.DB) *chi.Mux {
 
 		r.Group(func(r chi.Router) {
 			r.Use(tokenvalidator.TVMiddleware(log))
-			r.Get("/GUID", getguid.UUIDHadler(log, db))
+
+			r.Get("/guid", getguid.UUIDHadler(log, db))
+			r.Post("/deauthTokens", deauthtokens.DATHandler(log, db))
 		})
 
 		r.Group(func(r chi.Router) {
 			r.Use(expiretokenvalidator.ETVMiddleware(log))
-			r.Get("/update", updatetokens.UTHandler(log, cfg.TTLToken))
+
+			r.Post("/updateTokens", updatetokens.UTHandler(log, cfg.TTLToken))
 		})
 	})
 
