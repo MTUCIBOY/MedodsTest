@@ -48,6 +48,7 @@ func TVMiddleware(log *slog.Logger) func(next http.Handler) http.Handler {
 			}
 
 			ctx := context.WithValue(r.Context(), middlewares.UserEmailKey, accessClaims.Subject)
+			ctx = context.WithValue(ctx, middlewares.UserAgentKey, accessClaims.UserAgent)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

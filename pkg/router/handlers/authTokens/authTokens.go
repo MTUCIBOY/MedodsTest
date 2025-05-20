@@ -79,7 +79,7 @@ func ATHandler(log *slog.Logger, ttl time.Duration, cu checkUser) http.HandlerFu
 		}
 
 		accessToken, err := access.New(
-			req.Email, w.Header().Get("User-Agent"), refreshToken, ttl,
+			req.Email, r.UserAgent(), refreshToken, ttl,
 		)
 		if err != nil {
 			log.Error("failed to make access token", slog.String("err", err.Error()))

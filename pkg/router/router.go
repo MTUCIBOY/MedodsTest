@@ -10,6 +10,7 @@ import (
 	newuser "github.com/MTUCIBOY/MedodsTest/pkg/router/handlers/newUser"
 	updatetokens "github.com/MTUCIBOY/MedodsTest/pkg/router/handlers/updateTokens"
 	checkrefreshtoken "github.com/MTUCIBOY/MedodsTest/pkg/router/middlewares/checkRefreshToken"
+	checkuseragent "github.com/MTUCIBOY/MedodsTest/pkg/router/middlewares/checkUserAgent"
 	expiretokenvalidator "github.com/MTUCIBOY/MedodsTest/pkg/router/middlewares/expireTokenValidator"
 	tokenvalidator "github.com/MTUCIBOY/MedodsTest/pkg/router/middlewares/tokenValidator"
 	"github.com/MTUCIBOY/MedodsTest/pkg/storage"
@@ -33,14 +34,19 @@ func New(cfg *config.Config, log *slog.Logger, db storage.DB) *chi.Mux {
 		r.Use(checkrefreshtoken.CRTMiddleware(log, db))
 
 		r.Group(func(r chi.Router) {
-			r.Use(tokenvalidator.TVMiddleware(log))
+			r.Use(
+				tokenvalidator.TVMiddleware(log),
+			)
 
 			r.Get("/guid", getguid.UUIDHadler(log, db))
 			r.Post("/deauthTokens", deauthtokens.DATHandler(log, db))
 		})
 
 		r.Group(func(r chi.Router) {
-			r.Use(expiretokenvalidator.ETVMiddleware(log))
+			r.Use(
+				expiretokenvalidator.ETVMiddleware(log),
+				checkuseragent.CUAMiddleware(log, db),
+			)
 
 			r.Post("/updateTokens", updatetokens.UTHandler(log, cfg.TTLToken))
 		})
