@@ -7,15 +7,17 @@ import (
 
 	"github.com/MTUCIBOY/MedodsTest/pkg/tokens"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 var errEmptySecretKey = errors.New("JWT_SECRET is not set")
 
-func New(accessToken string) (string, error) {
-	token := jwt.New(jwt.SigningMethodHS512)
+func New() (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.RegisteredClaims{
+		ID: uuid.New().String(),
+	})
 
-	// Благодаря этой связке выполняется требование о парах
-	secretKey := []byte(os.Getenv("JWT_SECRET") + accessToken)
+	secretKey := []byte(os.Getenv("JWT_SECRET"))
 	if len(secretKey) == 0 {
 		return "", errEmptySecretKey
 	}
@@ -28,24 +30,23 @@ func New(accessToken string) (string, error) {
 	return tokenString, nil
 }
 
-func CheckToken(refreshToken, accessToken string) error {
+func Check(token string) (string, error) {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		return tokens.ErrEmptySecretKey
+		return "", tokens.ErrEmptySecretKey
 	}
 
-	jwtSecret += accessToken
-
-	parsedToken, err := jwt.Parse(refreshToken, func(_ *jwt.Token) (any, error) {
+	parsedToken, err := jwt.ParseWithClaims(token, &jwt.RegisteredClaims{}, func(_ *jwt.Token) (any, error) {
 		return []byte(jwtSecret), nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS512.Alg()}))
 	if err != nil {
-		return fmt.Errorf("failed to parse token: %w", err)
+		return "", fmt.Errorf("failed to parse token: %w", err)
 	}
 
-	if !parsedToken.Valid {
-		return tokens.ErrInvalidToken
+	claims, ok := parsedToken.Claims.(*jwt.RegisteredClaims)
+	if !ok {
+		return "", tokens.ErrInvalidClaims
 	}
 
-	return nil
+	return claims.ID, nil
 }

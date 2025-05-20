@@ -14,7 +14,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func New(email, userAgent string, ttl time.Duration) (string, error) {
+func New(email, userAgent, refreshToken string, ttl time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, Claims{
 		UserAgent: userAgent,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -25,7 +25,8 @@ func New(email, userAgent string, ttl time.Duration) (string, error) {
 		},
 	})
 
-	secretKey := []byte(os.Getenv("JWT_SECRET"))
+	// Благодаря этой связке удовлетворяется требование о парах
+	secretKey := []byte(os.Getenv("JWT_SECRET") + refreshToken)
 	if len(secretKey) == 0 {
 		return "", tokens.ErrEmptySecretKey
 	}
@@ -38,27 +39,50 @@ func New(email, userAgent string, ttl time.Duration) (string, error) {
 	return tokenString, nil
 }
 
-func CheckToken(token string) (string, string, error) {
+func Check(accessToken, refreshToken string) (*Claims, error) {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		return "", "", tokens.ErrEmptySecretKey
+		return nil, tokens.ErrEmptySecretKey
 	}
 
-	parsedToken, err := jwt.ParseWithClaims(token, &Claims{}, func(_ *jwt.Token) (any, error) {
-		return []byte(jwtSecret), nil
+	parsedToken, err := jwt.ParseWithClaims(accessToken, &Claims{}, func(_ *jwt.Token) (any, error) {
+		return []byte(jwtSecret + refreshToken), nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS512.Alg()}))
 	if err != nil {
-		return "", "", fmt.Errorf("failed to parse token: %w", err)
+		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 
-	if !parsedToken.Valid {
-		return "", "", tokens.ErrInvalidToken
-	}
-
-	claims, ok := parsedToken.Claims.(*Claims)
+	jwtclaims, ok := parsedToken.Claims.(*Claims)
 	if !ok {
-		return "", "", tokens.ErrInvalidClaims
+		return nil, tokens.ErrInvalidClaims
 	}
 
-	return claims.Subject, claims.UserAgent, nil
+	return jwtclaims, nil
+}
+
+func CheckWithoutClaims(accessToken, refreshToken string) (*Claims, error) {
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		return nil, tokens.ErrEmptySecretKey
+	}
+
+	parsedToken, err := jwt.ParseWithClaims(
+		accessToken,
+		&Claims{},
+		func(_ *jwt.Token) (any, error) {
+			return []byte(jwtSecret + refreshToken), nil
+		},
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS512.Alg()}),
+		jwt.WithoutClaimsValidation(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token: %w", err)
+	}
+
+	jwtclaims, ok := parsedToken.Claims.(*Claims)
+	if !ok {
+		return nil, tokens.ErrInvalidClaims
+	}
+
+	return jwtclaims, nil
 }

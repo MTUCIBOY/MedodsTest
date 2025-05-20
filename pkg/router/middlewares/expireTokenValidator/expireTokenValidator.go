@@ -1,4 +1,4 @@
-package tokenvalidator
+package expiretokenvalidator
 
 import (
 	"context"
@@ -12,10 +12,10 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func TVMiddleware(log *slog.Logger) func(next http.Handler) http.Handler {
+func ETVMiddleware(log *slog.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			const fn = "middlewares.TokenValidator"
+			const fn = "middlewares.ExpireTokenValidator"
 			log := log.With(
 				slog.String("fn", fn),
 				slog.String("requestID", middleware.GetReqID(r.Context())),
@@ -39,7 +39,7 @@ func TVMiddleware(log *slog.Logger) func(next http.Handler) http.Handler {
 				return
 			}
 
-			accessClaims, err := access.Check(accessToken, refreshToken)
+			accessClaims, err := access.CheckWithoutClaims(accessToken, refreshToken)
 			if err != nil {
 				log.Error("failed to check access token", slog.String("err", err.Error()))
 				errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")

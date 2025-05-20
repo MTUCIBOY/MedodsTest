@@ -104,7 +104,7 @@ func (s *Storage) AddUser(ctx context.Context, email, password string) error {
 	return nil
 }
 
-func (s *Storage) AddRefreshToken(ctx context.Context, email, token string) error {
+func (s *Storage) AddRefreshToken(ctx context.Context, email, token, uuidToken string) error {
 	const fn = "psql.Storage.AddRefreshToken"
 	log := s.logger.With(slog.String("fn", fn))
 
@@ -116,7 +116,7 @@ func (s *Storage) AddRefreshToken(ctx context.Context, email, token string) erro
 	}
 
 	// Ограничение  длины токена. У bcrypt есть ограниечение на строку до 72 байт
-	shortToken := []byte(token)[len(token)-72:]
+	shortToken := []byte(token)[len(token)-storage.MaxLenRefreshHash:]
 
 	tokenHash, err := bcrypt.GenerateFromPassword(shortToken, bcrypt.DefaultCost)
 	if err != nil {
@@ -125,7 +125,7 @@ func (s *Storage) AddRefreshToken(ctx context.Context, email, token string) erro
 		return fmt.Errorf("failed to generate token hash: %w", err)
 	}
 
-	_, err = s.db.Exec(ctx, storage.AddRefreshTokenQuery, userUUID, tokenHash)
+	_, err = s.db.Exec(ctx, storage.AddRefreshTokenQuery, uuidToken, userUUID, tokenHash)
 	if err != nil {
 		log.Error("query failed", slog.String("err", err.Error()))
 
@@ -149,4 +149,34 @@ func (s *Storage) UserUUID(ctx context.Context, email string) (string, error) {
 	}
 
 	return uuid, nil
+}
+
+func (s *Storage) IsActiveRefresh(ctx context.Context, token, uuidToken string) (bool, error) {
+	const fn = "psql.Storage.IsRefresh"
+	log := s.logger.With(
+		slog.String("fn", fn),
+	)
+
+	var (
+		refreshHash []byte
+		isActive    bool
+	)
+
+	err := s.db.QueryRow(ctx, storage.RefreshTokenQuery, uuidToken).Scan(&refreshHash, &isActive)
+	if err != nil {
+		log.Error("query failed", slog.String("err", err.Error()))
+
+		return isActive, fmt.Errorf("query failed: %w", err)
+	}
+
+	shortToken := []byte(token)[len(token)-storage.MaxLenRefreshHash:]
+
+	err = bcrypt.CompareHashAndPassword(refreshHash, shortToken)
+	if err != nil {
+		log.Error(storage.ErrNotMatchHashes.Error())
+
+		return false, storage.ErrNotMatchHashes
+	}
+
+	return isActive, nil
 }

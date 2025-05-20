@@ -17,7 +17,7 @@ import (
 
 type checkUser interface {
 	Auth(ctx context.Context, email, password string) (bool, error)
-	AddRefreshToken(ctx context.Context, email, token string) error
+	AddRefreshToken(ctx context.Context, email, token, uuidToken string) error
 }
 
 type userRequest struct {
@@ -70,15 +70,7 @@ func ATHandler(log *slog.Logger, ttl time.Duration, cu checkUser) http.HandlerFu
 			return
 		}
 
-		accessToken, err := access.New(req.Email, w.Header().Get("User-Agent"), ttl)
-		if err != nil {
-			log.Error("failed to make access token", slog.String("err", err.Error()))
-			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
-
-			return
-		}
-
-		refreshToken, err := refresh.New(accessToken)
+		refreshToken, err := refresh.New()
 		if err != nil {
 			log.Error("failed to make refresh token", slog.String("err", err.Error()))
 			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
@@ -86,7 +78,25 @@ func ATHandler(log *slog.Logger, ttl time.Duration, cu checkUser) http.HandlerFu
 			return
 		}
 
-		err = cu.AddRefreshToken(r.Context(), req.Email, refreshToken)
+		accessToken, err := access.New(
+			req.Email, w.Header().Get("User-Agent"), refreshToken, ttl,
+		)
+		if err != nil {
+			log.Error("failed to make access token", slog.String("err", err.Error()))
+			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
+
+			return
+		}
+
+		uuidToken, err := refresh.Check(refreshToken)
+		if err != nil {
+			log.Error("failed to get refresh ID", slog.String("err", err.Error()))
+			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
+
+			return
+		}
+
+		err = cu.AddRefreshToken(r.Context(), req.Email, refreshToken, uuidToken)
 		if err != nil {
 			log.Error("failed to write in DB refresh token", slog.String("err", err.Error()))
 			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")

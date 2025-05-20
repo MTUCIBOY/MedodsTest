@@ -9,15 +9,21 @@ type DB interface {
 	Connect(ctx context.Context, dsn string) error
 	Auth(ctx context.Context, email, password string) (bool, error)
 	AddUser(ctx context.Context, email, password string) error
-	AddRefreshToken(ctx context.Context, email, token string) error
+	AddRefreshToken(ctx context.Context, email, token, uuidToken string) error
 	UserUUID(ctx context.Context, email string) (string, error)
+	IsActiveRefresh(ctx context.Context, token, uuidToken string) (bool, error)
 	Close()
 }
 
 var (
-	ErrEmailExist    = errors.New("email exists")
-	ErrEmailNotFound = errors.New("email not found")
-	ErrWrongPassword = errors.New("wrong password")
+	ErrEmailExist     = errors.New("email exists")
+	ErrEmailNotFound  = errors.New("email not found")
+	ErrWrongPassword  = errors.New("wrong password")
+	ErrNotMatchHashes = errors.New("the hashes don't match")
+)
+
+const (
+	MaxLenRefreshHash = 72
 )
 
 const (
@@ -34,13 +40,19 @@ const (
 
 	//nolint:gosec
 	AddRefreshTokenQuery = `
-		INSERT INTO refresh_hashes (user_uuid, token_hash)
-		VALUES ($1, $2);
+		INSERT INTO refresh_hashes (uuid, user_uuid, token_hash)
+		VALUES ($1, $2, $3);
 	`
 
 	UserUUIDQuery = `
 		SELECT uuid
 		FROM users
 		WHERE email = $1;
+	`
+
+	RefreshTokenQuery = `
+		SELECT token_hash, is_active
+		FROM refresh_hashes
+		WHERE uuid = $1;
 	`
 )
