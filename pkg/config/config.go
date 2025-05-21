@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	Env      string        `yaml:"env" env-default:"local"`
-	TTLToken time.Duration `yaml:"ttl_token" env-default:"5m"`
+	Env        string        `yaml:"env" env-default:"local"`
+	TTLToken   time.Duration `yaml:"ttl_token" env-default:"5m"`
+	WebhookURL string        `yaml:"webhookURL" env-default:"http://localhost:8888"`
 
 	ServerSetting `yaml:"http_server"`
 }

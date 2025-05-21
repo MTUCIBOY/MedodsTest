@@ -11,12 +11,14 @@ import (
 
 type Claims struct {
 	UserAgent string
+	UserIP    string
 	jwt.RegisteredClaims
 }
 
-func New(email, userAgent, refreshToken string, ttl time.Duration) (string, error) {
+func New(email, userAgent, userIP, refreshToken string, ttl time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, Claims{
 		UserAgent: userAgent,
+		UserIP:    userIP,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   email,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),

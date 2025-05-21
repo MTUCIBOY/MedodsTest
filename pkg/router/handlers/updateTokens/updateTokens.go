@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	errorresponse "github.com/MTUCIBOY/MedodsTest/pkg/router/errorResponse"
@@ -36,7 +37,12 @@ func UTHandler(log *slog.Logger, ttl time.Duration) http.HandlerFunc {
 			return
 		}
 
-		accessToken, err := access.New(userEmail, r.UserAgent(), refreshToken, ttl)
+		accessToken, err := access.New(
+			userEmail,
+			r.UserAgent(),
+			strings.Split(r.RemoteAddr, ":")[0],
+			refreshToken, ttl,
+		)
 		if err != nil {
 			log.Error("failed to generate access token", slog.String("err", err.Error()))
 			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")

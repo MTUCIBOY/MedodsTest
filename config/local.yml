@@ -1,5 +1,6 @@
 env: "local"
 ttl_token: 10m
+webhookURL: http://localhost:8888
 
 http_server:
   address: "localhost:8888"

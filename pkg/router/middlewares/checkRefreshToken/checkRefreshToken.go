@@ -24,6 +24,12 @@ func CRTMiddleware(log *slog.Logger, crt CheckRefreshToken) func(next http.Handl
 			)
 
 			refreshToken := r.Header.Get("Refresh-Token")
+			if refreshToken == "" {
+				log.Error("missing refresh token")
+				errorresponse.JSONResponde(w, http.StatusUnauthorized, "Missing refresh token")
+
+				return
+			}
 
 			refreshID, err := refresh.Check(refreshToken)
 			if err != nil {

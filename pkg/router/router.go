@@ -11,6 +11,7 @@ import (
 	updatetokens "github.com/MTUCIBOY/MedodsTest/pkg/router/handlers/updateTokens"
 	checkrefreshtoken "github.com/MTUCIBOY/MedodsTest/pkg/router/middlewares/checkRefreshToken"
 	checkuseragent "github.com/MTUCIBOY/MedodsTest/pkg/router/middlewares/checkUserAgent"
+	checkuserip "github.com/MTUCIBOY/MedodsTest/pkg/router/middlewares/checkUserIP"
 	expiretokenvalidator "github.com/MTUCIBOY/MedodsTest/pkg/router/middlewares/expireTokenValidator"
 	tokenvalidator "github.com/MTUCIBOY/MedodsTest/pkg/router/middlewares/tokenValidator"
 	"github.com/MTUCIBOY/MedodsTest/pkg/storage"
@@ -46,6 +47,7 @@ func New(cfg *config.Config, log *slog.Logger, db storage.DB) *chi.Mux {
 			r.Use(
 				expiretokenvalidator.ETVMiddleware(log),
 				checkuseragent.CUAMiddleware(log, db),
+				checkuserip.CUIPMiddleware(log, cfg.WebhookURL),
 			)
 
 			r.Post("/updateTokens", updatetokens.UTHandler(log, cfg.TTLToken))
