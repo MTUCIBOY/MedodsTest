@@ -23,7 +23,7 @@ POST /deauthTokens      // Деавторизация
 POST /updateTokens      // Обновление токенов (с проверкой IP/User-Agent)
 ```
 
-## 🛠️ Установка и запуск
+## Установка и запуск
 
 ### 1. Запуск сервиса:
 ```bash
@@ -74,10 +74,10 @@ ttl_token: 10m
 webhookURL: http://localhost:8888
 
 http_server:
-	address: "0.0.0.0:8888"
-	read_timeout: 5s
-	write_timeout: 5s
-	idle_timeout: 10s
+  address: "0.0.0.0:8888"
+  read_timeout: 5s
+  write_timeout: 5s
+  idle_timeout: 10s
 ```
 ## Зависимости
 - github.com/go-chi/chi/v5  v5.2.1
