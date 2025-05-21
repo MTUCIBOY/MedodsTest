@@ -19,6 +19,21 @@ type userResponse struct {
 	GUID string `json:"guid"`
 }
 
+// @Summary Получение GUID пользователя
+// @Description Возвращает уникальный идентификатор (GUID) текущего пользователя
+// @Tags user
+// @Accept json
+// @Produce json
+//
+// @Param Access-Token header string true "Access Token"
+// @Param Refresh-Token header string true "Refresh Token"
+//
+// @Success 200 {object} userResponse "GUID пользователя"
+// @Failure 401 {object} errorresponse.ErrorResponse "Невалидные токены"
+// @Failure 403 {object} errorresponse.ErrorResponse "Refresh Token не активен"
+// @Failure 500 {object} errorresponse.ErrorResponse "Ошибка сервера"
+//
+// @Router /guid [get]
 func UUIDHadler(log *slog.Logger, u UUID) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fn = "handlers.GetUUID"

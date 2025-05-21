@@ -1,0 +1,219 @@
+basePath: /
+definitions:
+  authtokens.userRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  authtokens.userResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  errorresponse.ErrorResponse:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  getguid.userResponse:
+    properties:
+      guid:
+        type: string
+    type: object
+  newuser.userRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  updatetokens.userResponse:
+    properties:
+      access_token:
+        type: string
+    type: object
+host: localhost:8888
+info:
+  contact: {}
+  description: 'Сервис авторизации, который использует два JWT-токена:'
+  title: Auth Service API
+  version: "1.0"
+paths:
+  /authTokens:
+    post:
+      consumes:
+      - application/json
+      description: Выполняет аутентификацию по email и паролю, возвращает Access и
+        Refresh токены
+      parameters:
+      - description: Данные для аутентификации (email и пароль)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/authtokens.userRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Access и Refresh токены
+          schema:
+            $ref: '#/definitions/authtokens.userResponse'
+        "400":
+          description: Неправильное тело запроса
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+        "401":
+          description: Неверный email или пароль
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+      summary: Аутентификация пользователя
+      tags:
+      - auth
+  /deauthTokens:
+    post:
+      consumes:
+      - application/json
+      description: Деактивирует Refresh Token пользователя
+      parameters:
+      - description: Access Token для деактивации
+        in: header
+        name: Access-Token
+        required: true
+        type: string
+      - description: Refresh Token для деактивации
+        in: header
+        name: Refresh-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Сессия успешно завершена
+        "401":
+          description: Невалидный Refresh Token
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+        "403":
+          description: Refresh Token не активен
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+      summary: Деавторизация пользователя
+      tags:
+      - auth
+  /guid:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает уникальный идентификатор (GUID) текущего пользователя
+      parameters:
+      - description: Access Token
+        in: header
+        name: Access-Token
+        required: true
+        type: string
+      - description: Refresh Token
+        in: header
+        name: Refresh-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: GUID пользователя
+          schema:
+            $ref: '#/definitions/getguid.userResponse'
+        "401":
+          description: Невалидные токены
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+      summary: Получение GUID пользователя
+      tags:
+      - user
+  /registrate:
+    post:
+      consumes:
+      - application/json
+      description: Регистрирует нового пользователя по email и паролю
+      parameters:
+      - description: Данные для регистрации (email и пароль)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/newuser.userRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь успешно зарегистрирован
+        "400":
+          description: Неверный запрос или email уже существует
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+        "401":
+          description: Невалидные токены
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+      summary: Регистрация нового пользователя
+      tags:
+      - user
+  /updateTokens:
+    post:
+      consumes:
+      - application/json
+      description: Генерирует новый Access Token на основе Refresh Token
+      parameters:
+      - description: Access Token
+        in: header
+        name: Access-Token
+        required: true
+        type: string
+      - description: Refresh Token
+        in: header
+        name: Refresh-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Новый Access Token
+          schema:
+            $ref: '#/definitions/updatetokens.userResponse'
+        "401":
+          description: Невалидный Refresh Token или отсутствие email в контексте
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/errorresponse.ErrorResponse'
+      summary: Обновление Access Token
+      tags:
+      - auth
+swagger: "2.0"

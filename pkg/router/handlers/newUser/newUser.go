@@ -21,6 +21,20 @@ type userRequest struct {
 	Password string `json:"password"`
 }
 
+// @Summary Регистрация нового пользователя
+// @Description Регистрирует нового пользователя по email и паролю
+// @Tags user
+// @Accept json
+// @Produce json
+//
+// @Param request body userRequest true "Данные для регистрации (email и пароль)"
+//
+// @Success 201 {object} nil "Пользователь успешно зарегистрирован"
+// @Failure 400 {object} errorresponse.ErrorResponse "Неверный запрос или email уже существует"
+// @Failure 401 {object} errorresponse.ErrorResponse "Невалидные токены"
+// @Failure 500 {object} errorresponse.ErrorResponse "Ошибка сервера"
+//
+// @Router /registrate [post]
 func NUHandler(log *slog.Logger, ru registerUser) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fn = "handlers.newUser"

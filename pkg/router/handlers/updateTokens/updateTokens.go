@@ -17,6 +17,21 @@ type userResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
+// @Summary Обновление Access Token
+// @Description Генерирует новый Access Token на основе Refresh Token
+// @Tags auth
+// @Accept json
+// @Produce json
+//
+// @Param Access-Token header string true "Access Token"
+// @Param Refresh-Token header string true "Refresh Token"
+//
+// @Success 200 {object} userResponse "Новый Access Token"
+// @Failure 401 {object} errorresponse.ErrorResponse "Невалидный Refresh Token или отсутствие email в контексте"
+// @Failure 403 {object} errorresponse.ErrorResponse "Refresh Token не активен"
+// @Failure 500 {object} errorresponse.ErrorResponse "Ошибка сервера"
+//
+// @Router /updateTokens [post]
 func UTHandler(log *slog.Logger, ttl time.Duration) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fn = "handlers.UpdateTokens"

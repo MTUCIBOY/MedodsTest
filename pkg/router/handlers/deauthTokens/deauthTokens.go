@@ -15,6 +15,21 @@ type deauthUser interface {
 	DeactivateRefreshToken(ctx context.Context, uuidToken string) error
 }
 
+// @Summary Деавторизация пользователя
+// @Description Деактивирует Refresh Token пользователя
+// @Tags auth
+// @Accept json
+// @Produce json
+//
+// @Param Access-Token header string true "Access Token для деактивации"
+// @Param Refresh-Token header string true "Refresh Token для деактивации"
+//
+// @Success 200 {object} nil "Сессия успешно завершена"
+// @Failure 401 {object} errorresponse.ErrorResponse "Невалидный Refresh Token"
+// @Failure 403 {object} errorresponse.ErrorResponse "Refresh Token не активен"
+// @Failure 500 {object} errorresponse.ErrorResponse "Ошибка сервера"
+//
+// @Router /deauthTokens [post]
 func DATHandler(log *slog.Logger, dau deauthUser) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fn = "handler.DeauthTokens"
@@ -28,7 +43,7 @@ func DATHandler(log *slog.Logger, dau deauthUser) http.HandlerFunc {
 		refreshID, err := refresh.Check(refreshToken)
 		if err != nil {
 			log.Error("failed to check refresh token", slog.String("err", err.Error()))
-			errorresponse.JSONResponde(w, http.StatusInternalServerError, "Something wrong")
+			errorresponse.JSONResponde(w, http.StatusUnauthorized, "Something wrong")
 
 			return
 		}

@@ -31,6 +31,20 @@ type userResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+// @Summary Аутентификация пользователя
+// @Description Выполняет аутентификацию по email и паролю, возвращает Access и Refresh токены
+// @Tags auth
+// @Accept json
+// @Produce json
+//
+// @Param request body userRequest true "Данные для аутентификации (email и пароль)"
+//
+// @Success 200 {object} userResponse "Access и Refresh токены"
+// @Failure 400 {object} errorresponse.ErrorResponse "Неправильное тело запроса"
+// @Failure 401 {object} errorresponse.ErrorResponse "Неверный email или пароль"
+// @Failure 500 {object} errorresponse.ErrorResponse "Ошибка сервера"
+//
+// @Router /authTokens [post]
 func ATHandler(log *slog.Logger, ttl time.Duration, cu checkUser) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fn = "handlers.authTokens"
