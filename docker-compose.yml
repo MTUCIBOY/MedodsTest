@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build: .
+    container_name: auth-service
+    env_file:
+      - .env
+    environment:
+      STORAGE_DSN: "postgres://authUser:postgresql@postgres-server/AuthDB"
+    ports:
+      - "8888:8888"
+    depends_on:
+      - postgres-server
+
+  postgres-server:
+    image: postgres
+    environment:
+      POSTGRES_USER: authUser
+      POSTGRES_PASSWORD: postgresql
+      POSTGRES_DB: AuthDB
+    ports:
+      - "5433:5432"

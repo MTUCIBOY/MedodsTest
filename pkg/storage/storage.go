@@ -28,6 +28,25 @@ const (
 )
 
 const (
+	InitDBQuery = `
+		CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+		CREATE TABLE IF NOT EXISTS users (
+			uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+			email TEXT UNIQUE NOT NULL,
+			password_hash TEXT NOT NULL,
+			created_at TIMESTAMP DEFAULT NOW()
+		);
+
+		CREATE TABLE IF NOT EXISTS refresh_hashes (
+				uuid UUID PRIMARY KEY,
+				user_uuid UUID REFERENCES users(uuid),
+				token_hash TEXT NOT NULL,
+				is_active BOOL DEFAULT TRUE NOT NULL,
+				created_at TIMESTAMP DEFAULT NOW() NOT NULL 
+		);
+	`
+
 	AuthQuery = `
 		SELECT password_hash 
 		FROM users 

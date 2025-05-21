@@ -37,6 +37,13 @@ func (s *Storage) Connect(ctx context.Context, dsn string) error {
 
 	s.db = pool
 
+	_, err = pool.Exec(ctx, storage.InitDBQuery)
+	if err != nil {
+		log.Error("failed to init DB", slog.String("err", err.Error()))
+
+		return fmt.Errorf("failed to init DB: %w", err)
+	}
+
 	log.Info("Connected to database")
 
 	return nil

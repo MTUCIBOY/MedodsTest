@@ -3,7 +3,7 @@ ttl_token: 10m
 webhookURL: http://localhost:8888
 
 http_server:
-  address: "localhost:8888"
+  address: "0.0.0.0:8888"
   read_timeout: 5s
   write_timeout: 5s
   idle_timeout: 10s
