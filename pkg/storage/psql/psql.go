@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/MTUCIBOY/MedodsTest/pkg/storage"
 	"github.com/jackc/pgx/v5"
@@ -29,9 +30,14 @@ func (s *Storage) Connect(ctx context.Context, dsn string) error {
 	log := s.logger.With(slog.String("fn", fn))
 
 	pool, err := pgxpool.New(ctx, dsn)
-	if err != nil {
+	for i := 0; i < 3 && err != nil; i++ {
 		log.Error("failed to connect to DB", slog.String("err", err.Error()))
+		time.Sleep(time.Second)
 
+		pool, err = pgxpool.New(ctx, dsn)
+	}
+
+	if err != nil {
 		return fmt.Errorf("failed to connect to DB: %w", err)
 	}
 

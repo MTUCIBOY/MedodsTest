@@ -31,7 +31,6 @@ type userRequest struct {
 //
 // @Success 201 {object} nil "Пользователь успешно зарегистрирован"
 // @Failure 400 {object} errorresponse.ErrorResponse "Неверный запрос или email уже существует"
-// @Failure 401 {object} errorresponse.ErrorResponse "Невалидные токены"
 // @Failure 500 {object} errorresponse.ErrorResponse "Ошибка сервера"
 //
 // @Router /registrate [post]
